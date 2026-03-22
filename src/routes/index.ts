@@ -15,11 +15,13 @@ router.use("/users", userRoutes);
 router.use("/sessions", sessionRoutes);
 router.use("/token", refreshRoutes);
 router.use("/logout", logoutRoutes);
+import timetableRoutes from "./timetable.routes.js";
 
 
 router.use("/students", studentRoutes);
 router.use("/teachers", teacherRoutes);
 router.use("/classes", classRoutes);
+router.use("/timetables", timetableRoutes);
 
 
 export default router;
