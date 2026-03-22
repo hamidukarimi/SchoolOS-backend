@@ -5,6 +5,7 @@ import refreshRoutes from "./refresh.routes.js";
 import logoutRoutes from "./logout.routes.js";
 
 import studentRoutes from "./student.routes.js";
+import teacherRoutes from "./teacher.routes.js";
 
 
 const router = Router();
@@ -16,6 +17,7 @@ router.use("/logout", logoutRoutes);
 
 
 router.use("/students", studentRoutes);
+router.use("/teachers", teacherRoutes);
 
 
 export default router;
