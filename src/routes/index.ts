@@ -10,6 +10,7 @@ import classRoutes from "./class.routes.js";
 import timetableRoutes from "./timetable.routes.js";
 import attendanceRoutes from "./attendance.routes.js";
 import examRoutes from "./exam.routes.js";
+import gradeRoutes from "./grade.routes.js";
 
 
 const router = Router();
@@ -26,6 +27,7 @@ router.use("/classes", classRoutes);
 router.use("/timetables", timetableRoutes);
 router.use("/attendance", attendanceRoutes);
 router.use("/exams", examRoutes);
+router.use("/grades", gradeRoutes);
 
 
 export default router;
