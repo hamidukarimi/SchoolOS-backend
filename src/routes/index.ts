@@ -11,6 +11,7 @@ import timetableRoutes from "./timetable.routes.js";
 import attendanceRoutes from "./attendance.routes.js";
 import examRoutes from "./exam.routes.js";
 import gradeRoutes from "./grade.routes.js";
+import feeRoutes from "./fee.routes.js";
 
 
 const router = Router();
@@ -28,6 +29,7 @@ router.use("/timetables", timetableRoutes);
 router.use("/attendance", attendanceRoutes);
 router.use("/exams", examRoutes);
 router.use("/grades", gradeRoutes);
+router.use("/fees", feeRoutes);
 
 
 export default router;
