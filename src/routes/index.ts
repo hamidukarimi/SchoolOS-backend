@@ -12,6 +12,7 @@ import attendanceRoutes from "./attendance.routes.js";
 import examRoutes from "./exam.routes.js";
 import gradeRoutes from "./grade.routes.js";
 import feeRoutes from "./fee.routes.js";
+import announcementRoutes from "./announcement.routes.js";
 
 
 const router = Router();
@@ -30,6 +31,7 @@ router.use("/attendance", attendanceRoutes);
 router.use("/exams", examRoutes);
 router.use("/grades", gradeRoutes);
 router.use("/fees", feeRoutes);
+router.use("/announcements", announcementRoutes);
 
 
 export default router;
