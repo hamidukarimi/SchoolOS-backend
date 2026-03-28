@@ -1,6 +1,7 @@
 import { Router } from "express";
 import * as userController from "../controllers/user.controller.js";
 import protect from "../middlewares/auth.middleware.js";
+import { registerLimiter } from "../middlewares/rateLimit.middleware.js";
 import validate from "../middlewares/validate.middleware.js";
 import {
   registerSchema,
@@ -10,7 +11,12 @@ import {
 
 const router = Router();
 
-router.post("/", validate(registerSchema), userController.create);
+router.post(
+  "/",
+  registerLimiter,
+  validate(registerSchema),
+  userController.create,
+);
 router.put(
   "/me/password",
   protect,

@@ -1,9 +1,12 @@
 import jwt from "jsonwebtoken";
-import type { JwtPayload } from "jsonwebtoken";
 import type { RequestHandler } from "express";
 import User from "../models/User.model.js";
 import ApiError from "../utils/ApiError.js";
 import env from "../config/env.js";
+import {
+  accessTokenVerifyOptions,
+  type AccessTokenPayload,
+} from "../utils/jwt.js";
 
 const protect: RequestHandler = async (req, _res, next) => {
   try {
@@ -19,9 +22,18 @@ const protect: RequestHandler = async (req, _res, next) => {
       throw new ApiError(401, "Not authorized. No token provided.");
     }
 
-    const decoded = jwt.verify(token, env.jwtAccessSecret) as JwtPayload;
+    let decoded: AccessTokenPayload;
+    try {
+      decoded = jwt.verify(
+        token,
+        env.jwtAccessSecret,
+        accessTokenVerifyOptions(),
+      ) as AccessTokenPayload;
+    } catch {
+      throw new ApiError(401, "Invalid or expired token.");
+    }
 
-    if (!decoded.sub) {
+    if (!decoded.sub || typeof decoded.tokenVersion !== "number") {
       throw new ApiError(401, "Invalid token payload.");
     }
 
@@ -29,6 +41,10 @@ const protect: RequestHandler = async (req, _res, next) => {
 
     if (!user) {
       throw new ApiError(401, "User no longer exists.");
+    }
+
+    if (user.tokenVersion !== decoded.tokenVersion) {
+      throw new ApiError(401, "Session is no longer valid. Please sign in again.");
     }
 
     if (!user.isActive) {
