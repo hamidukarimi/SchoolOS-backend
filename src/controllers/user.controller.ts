@@ -1,21 +1,14 @@
 import type { RequestHandler } from "express";
-import type { StringValue } from "ms";
 import { createUser, changePassword, getMyProfileService, updateProfileService } from "../services/user.service.js";
 import ApiError from "../utils/ApiError.js";
-import env from "../config/env.js";
-import ms from "ms";
 import { updateProfileSchema } from "../validators/user.validator.js";
+import { refreshCookieOptions } from "../config/cookie.js";
 
 export const create: RequestHandler = async (req, res, next) => {
   try {
     const result = await createUser(req.body, req);
 
-    res.cookie("refreshToken", result.refreshToken, {
-      httpOnly: true,
-      secure: env.nodeEnv === "production",
-      sameSite: "lax",
-      maxAge: ms(env.jwtRefreshExpiresIn as StringValue),
-    });
+    res.cookie("refreshToken", result.refreshToken, refreshCookieOptions());
 
     res.status(201).json({
       success: true,

@@ -42,7 +42,11 @@ export interface IUserDocument extends IUser, IUserMethods, Document {
   _id: Types.ObjectId;
 }
 
-export type UserModel = Model<IUserDocument, {}, IUserMethods>;
+export type UserModel = Model<
+  IUserDocument,
+  Record<string, never>,
+  IUserMethods
+>;
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 

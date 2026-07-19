@@ -2,6 +2,7 @@ import type { RequestHandler } from "express";
 import Session from "../models/Session.model.js";
 import ApiError from "../utils/ApiError.js";
 import crypto from "crypto";
+import { clearRefreshCookieOptions } from "../config/cookie.js";
 
 // ─── Controllers ──────────────────────────────────────────────────────────────
 
@@ -16,7 +17,7 @@ export const logout: RequestHandler = async (req, res, next) => {
         .digest("hex");
 
       await Session.findOneAndDelete({ refreshTokenHash: hashedToken });
-      res.clearCookie("refreshToken");
+      res.clearCookie("refreshToken", clearRefreshCookieOptions());
     }
 
     res.status(200).json({ success: true, message: "Logged out" });
@@ -32,7 +33,7 @@ export const logoutAll: RequestHandler = async (req, res, next) => {
     }
 
     await Session.deleteMany({ user: req.user._id });
-    res.clearCookie("refreshToken");
+    res.clearCookie("refreshToken", clearRefreshCookieOptions());
 
     res.status(200).json({ success: true, message: "Logged out from all devices" });
   } catch (err) {

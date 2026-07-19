@@ -10,7 +10,12 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src tests eslint.config.js --max-warnings=0",
+    "lint:fix": "npm run lint -- --fix",
+    "test": "npm run build && node --test tests/*.test.js",
     "start": "node dist/server.js",
+    "seed:admin": "tsx src/scripts/seed-admin.ts",
     "migrate:user-social-fields": "tsx scripts/migrate-remove-user-social-fields.ts"
   },
   "keywords": [],
@@ -31,6 +36,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
@@ -38,7 +44,10 @@
     "@types/morgan": "^1.9.10",
     "@types/ms": "^2.1.0",
     "@types/node": "^25.3.3",
+    "eslint": "^10.7.0",
+    "globals": "^17.7.0",
     "tsx": "^4.21.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.64.0"
   }
 }

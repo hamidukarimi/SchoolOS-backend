@@ -1,4 +1,3 @@
-import type { Request } from "express";
 import type { Types } from "mongoose";
 import jwt from "jsonwebtoken";
 import type { IUserDocument } from "../models/User.model.js";
@@ -27,7 +26,6 @@ interface RefreshSessionResult {
 
 export const handleRefreshToken = async (
   refreshToken: string,
-  _req: Request,
 ): Promise<RefreshSessionResult> => {
   const hashedToken = crypto
     .createHash("sha256")
@@ -36,7 +34,7 @@ export const handleRefreshToken = async (
 
   const session = await Session.findOne({
     refreshTokenHash: hashedToken,
-  }).populate<{ user: IUserDocument }>("user");
+  }).populate<{ user: IUserDocument | null }>("user");
 
   if (!session) {
     throw new ApiError(403, "Invalid refresh token");
@@ -48,6 +46,16 @@ export const handleRefreshToken = async (
   }
 
   const user = session.user;
+
+  if (!user) {
+    await session.deleteOne();
+    throw new ApiError(403, "Invalid refresh token");
+  }
+
+  if (!user.isActive || user.isBlocked) {
+    await session.deleteOne();
+    throw new ApiError(403, "Account is unavailable");
+  }
 
   let decoded: RefreshTokenPayload;
   try {

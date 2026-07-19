@@ -1,6 +1,7 @@
 import Staff from "../models/Staff.model.js";
 import type { IStaff } from "../models/Staff.model.js";
 import type { IUserDocument } from "../models/User.model.js";
+import type { QueryFilter } from "mongoose";
 import ApiError from "../utils/ApiError.js";
 import { assertSchoolMutationAllowed } from "../utils/schoolReadAccess.js";
 
@@ -10,9 +11,14 @@ export const createStaffService = async (
 ) => {
   assertSchoolMutationAllowed(actor);
 
-  const existing = await Staff.findOne({
-    $or: [{ staffId: data.staffId }, { userId: data.userId }],
-  } as any);
+  const duplicateClauses: QueryFilter<IStaff>[] = [];
+  if (data.staffId) duplicateClauses.push({ staffId: data.staffId });
+  if (data.userId) duplicateClauses.push({ userId: data.userId });
+
+  const existing =
+    duplicateClauses.length > 0
+      ? await Staff.findOne({ $or: duplicateClauses })
+      : null;
 
   if (existing) {
     throw new ApiError(400, "Staff with this ID or user already exists");
@@ -32,7 +38,7 @@ export const getAllStaffService = async (filters: {
 }) => {
   const { status, department, contractType, search, page = 1, limit = 20 } = filters;
 
-  const query: any = {};
+  const query: QueryFilter<IStaff> = {};
 
   if (status) query.status = status;
   if (department) query.department = { $regex: department, $options: "i" };

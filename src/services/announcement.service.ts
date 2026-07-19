@@ -1,6 +1,7 @@
 import Announcement from "../models/Announcement.model.js";
 import type { IAnnouncement } from "../models/Announcement.model.js";
 import type { IUserDocument } from "../models/User.model.js";
+import type { QueryFilter } from "mongoose";
 import ApiError from "../utils/ApiError.js";
 import { assertSchoolMutationAllowed } from "../utils/schoolReadAccess.js";
 
@@ -23,7 +24,7 @@ export const getAllAnnouncementsService = async (filters: {
 }) => {
   const { audience, classId, isPublished, page = 1, limit = 20 } = filters;
 
-  const query: any = {};
+  const query: QueryFilter<IAnnouncement> = {};
 
   if (audience) query.audience = { $in: [audience, "all"] };
   if (classId) query.classId = classId;

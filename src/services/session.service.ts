@@ -38,6 +38,13 @@ export const createSession = async (
     throw new ApiError(401, "Invalid credentials");
   }
 
+  if (!user.isActive || user.isBlocked) {
+    throw new ApiError(403, "Account is unavailable");
+  }
+
+  user.lastLogin = new Date();
+  await user.save();
+
   const accessToken = generateAccessToken(user);
   const refreshToken = generateRefreshToken(user);
 

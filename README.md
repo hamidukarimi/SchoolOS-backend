@@ -1,524 +1,335 @@
-# SchoolOS Backend
+# NovaSchool OS Backend
 
-> A comprehensive, open-source School Management Information System (MIS) REST API built with Node.js, Express, TypeScript, and MongoDB.
+API de gestión escolar construida con Node.js, Express, TypeScript, MongoDB y Mongoose. Incluye autenticación JWT con rotación de refresh tokens, sesiones persistidas, autorización administrativa y módulos escolares.
 
----
+Proyecto basado en SchoolOS Backend, creado originalmente por Hamid Karimi y distribuido bajo licencia MIT.
 
-## Table of Contents
+## Tecnologías
 
-- [Overview](#overview)
-- [Features](#features)
-- [Tech Stack](#tech-stack)
-- [Project Structure](#project-structure)
-- [Getting Started](#getting-started)
-- [Environment Variables](#environment-variables)
-- [API Reference](#api-reference)
-- [Authentication](#authentication)
-- [Contributing](#contributing)
-- [License](#license)
+- Node.js 22
+- Express 5
+- TypeScript en modo estricto
+- MongoDB y Mongoose
+- JWT de acceso y renovación
+- Cookies HTTP-only
+- Zod
+- Helmet, CORS, rate limiting y Morgan
+- bcryptjs
 
----
+## Requisitos
 
-## Overview
+- Node.js 22 o compatible. El archivo `.nvmrc` fija la versión recomendada.
+- npm
+- MongoDB local, Docker o una URI privada de MongoDB Atlas
 
-SchoolOS is a production-ready backend system designed for schools of all sizes. It provides a complete REST API for managing every aspect of a school, from students and teachers to exams, fees, attendance, and more.
-
-The authentication system is powered by [Authforge-Express](https://github.com/hamidukarimi/authforge-express), a robust JWT-based auth system with access/refresh token rotation, session management, and role-based access control.
-
----
-
-## Features
-
-- **Authentication & Authorization** — JWT access/refresh tokens, session management, role-based access (admin, teacher, student, parent)
-- **Student Management** — Full CRUD, filtering, search, and pagination
-- **Teacher Management** — Full CRUD with subject and qualification tracking
-- **Class Management** — Class creation, student enrollment, capacity management
-- **Timetable** — Weekly scheduling with teacher conflict detection
-- **Attendance** — Single and bulk attendance recording, student summary reports
-- **Exams** — Exam scheduling with status tracking
-- **Grades** — Auto grade calculation (A+/A/B/C/D/F), bulk entry, student summaries
-- **Fees** — Fee creation, partial/full payment recording, overdue tracking, student summaries
-- **Announcements** — Audience-targeted announcements (all, teachers, students, parents)
-- **Messages** — Internal messaging system with inbox, sent, unread count, and read receipts
-- **Library** — Book catalog management, borrow/return tracking with availability control
-- **HR** — Staff management, contract types, department tracking, salary summaries
-
----
-
-## Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| Runtime | Node.js |
-| Framework | Express.js |
-| Language | TypeScript |
-| Database | MongoDB + Mongoose |
-| Authentication | JWT (Access + Refresh tokens) |
-| Validation | Zod |
-| Password Hashing | bcrypt |
-| Environment | dotenv |
-
----
-
-## Project Structure
-
-```
-src/
-├── config/
-│   ├── db.ts                        # MongoDB connection
-│   └── env.ts                       # Environment variables
-├── controllers/
-│   ├── user.controller.ts           # Auth: register, profile
-│   ├── session.controller.ts        # Auth: login
-│   ├── logout.controller.ts         # Auth: logout
-│   ├── refresh.controller.ts        # Auth: token refresh
-│   ├── student.controller.ts
-│   ├── teacher.controller.ts
-│   ├── class.controller.ts
-│   ├── attendance.controller.ts
-│   ├── exam.controller.ts
-│   ├── grade.controller.ts
-│   ├── timetable.controller.ts
-│   ├── fee.controller.ts
-│   ├── announcement.controller.ts
-│   ├── message.controller.ts
-│   ├── library.controller.ts
-│   └── hr.controller.ts
-├── middlewares/
-│   ├── auth.middleware.ts           # JWT verification
-│   ├── adminOnly.middleware.ts      # Admin role guard
-│   ├── role.middleware.ts           # Role-based guard
-│   ├── validate.middleware.ts       # Zod request validation
-│   ├── error.middleware.ts          # Global error handler
-│   └── rateLimit.middleware.ts      # Rate limiting
-├── models/
-│   ├── User.model.ts
-│   ├── Session.model.ts
-│   ├── Student.model.ts
-│   ├── Teacher.model.ts
-│   ├── Class.model.ts
-│   ├── Attendance.model.ts
-│   ├── Exam.model.ts
-│   ├── Grade.model.ts
-│   ├── Timetable.model.ts
-│   ├── Fee.model.ts
-│   ├── Announcement.model.ts
-│   ├── Message.model.ts
-│   ├── Book.model.ts
-│   ├── BookBorrow.model.ts
-│   └── Staff.model.ts
-├── routes/
-│   ├── index.ts                     # Route aggregator
-│   ├── user.routes.ts
-│   ├── session.routes.ts
-│   ├── logout.routes.ts
-│   ├── refresh.routes.ts
-│   ├── student.routes.ts
-│   ├── teacher.routes.ts
-│   ├── class.routes.ts
-│   ├── attendance.routes.ts
-│   ├── exam.routes.ts
-│   ├── grade.routes.ts
-│   ├── timetable.routes.ts
-│   ├── fee.routes.ts
-│   ├── announcement.routes.ts
-│   ├── message.routes.ts
-│   ├── library.routes.ts
-│   └── hr.routes.ts
-├── services/
-│   ├── user.service.ts
-│   ├── session.service.ts
-│   ├── refresh.service.ts
-│   ├── student.service.ts
-│   ├── teacher.service.ts
-│   ├── class.service.ts
-│   ├── attendance.service.ts
-│   ├── exam.service.ts
-│   ├── grade.service.ts
-│   ├── timetable.service.ts
-│   ├── fee.service.ts
-│   ├── announcement.service.ts
-│   ├── message.service.ts
-│   ├── library.service.ts
-│   └── hr.service.ts
-├── types/
-│   └── express.d.ts                 # Express type extensions
-├── utils/
-│   ├── ApiError.ts                  # Custom error class
-│   └── jwt.ts                       # JWT helpers
-├── validators/
-│   ├── user.validator.ts
-│   ├── session.validator.ts
-│   ├── student.validator.ts
-│   ├── teacher.validator.ts
-│   ├── class.validator.ts
-│   ├── attendance.validator.ts
-│   ├── exam.validator.ts
-│   ├── grade.validator.ts
-│   ├── timetable.validator.ts
-│   ├── fee.validator.ts
-│   ├── announcement.validator.ts
-│   ├── message.validator.ts
-│   ├── library.validator.ts
-│   └── hr.validator.ts
-├── app.ts                           # Express app setup
-└── server.ts                        # Server entry point
-```
-
----
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js v18+
-- MongoDB (local or Atlas)
-- npm or yarn
-
-### Installation
-
-**1. Clone the repository**
+Comprobación:
 
 ```bash
-git clone https://github.com/hamidukarimi/SchoolOS-backend.git
-cd SchoolOS-backend
+node --version
+npm --version
 ```
 
-**2. Install dependencies**
+## Instalación
+
+Desde `novaschool-os/backend`:
 
 ```bash
-npm install
+npm ci
 ```
 
-**3. Set up environment variables**
+Se usa npm porque el proyecto incluye `package-lock.json`.
+
+## Variables de entorno
+
+Crear el entorno local desde el ejemplo:
 
 ```bash
 cp .env.example .env
 ```
 
-Fill in your values in the `.env` file (see [Environment Variables](#environment-variables)).
+En PowerShell:
 
-**4. Build the project**
-
-```bash
-npm run build
+```powershell
+Copy-Item .env.example .env
 ```
 
-**5. Start the server**
+Variables:
+
+| Variable | Uso |
+|---|---|
+| `PORT` | Puerto HTTP; localmente `5000` |
+| `NODE_ENV` | `development`, `test` o `production` |
+| `MONGO_URI` | URI local o privada de Atlas |
+| `JWT_ACCESS_SECRET` | Secreto independiente de al menos 32 caracteres |
+| `JWT_REFRESH_SECRET` | Secreto independiente de al menos 32 caracteres |
+| `JWT_ACCESS_EXPIRES_IN` | Duración del access token, por ejemplo `15m` |
+| `JWT_REFRESH_EXPIRES_IN` | Duración de refresh y sesión, por ejemplo `7d` |
+| `CLIENT_URL` | Único origen permitido por CORS |
+| `COOKIE_SAME_SITE` | `lax`, `strict` o `none` |
+| `COOKIE_SECURE` | `false` en HTTP local; `true` en producción HTTPS |
+| `COOKIE_DOMAIN` | Dominio opcional de la cookie |
+
+No versionar `.env`. `.env.example` contiene únicamente referencias reemplazables.
+
+Para generar secretos de producción:
 
 ```bash
-# Development
+node -e "console.log(require('node:crypto').randomBytes(48).toString('hex'))"
+```
+
+Generar un valor diferente para cada secreto.
+
+## MongoDB local
+
+### Instalación existente
+
+Iniciar el servicio de MongoDB y usar:
+
+```dotenv
+MONGO_URI=mongodb://127.0.0.1:27017/novaschool_os
+```
+
+### Docker Compose
+
+El compose de desarrollo levanta solamente MongoDB:
+
+```bash
+docker compose -f docker-compose.dev.yml up -d
+docker compose -f docker-compose.dev.yml ps
+```
+
+Para detenerlo sin borrar el volumen:
+
+```bash
+docker compose -f docker-compose.dev.yml down
+```
+
+### MongoDB Atlas
+
+Reemplazar `MONGO_URI` en el `.env` local con la URI privada. No copiar la URI a `.env.example`, documentación, commits o capturas.
+
+El servidor espera la conexión a MongoDB antes de aceptar solicitudes. En `SIGINT` o `SIGTERM` cierra el servidor HTTP y la conexión de Mongoose.
+
+## Desarrollo
+
+```bash
 npm run dev
-
-# Production
-npm start
 ```
 
-The server will start on the port defined in your `.env` file (default: `5000`).
+API local:
 
-### First Admin User
-
-After starting the server, register a user via the API and then manually update their role to `admin` in MongoDB:
-
-```js
-db.users.updateOne(
-  { email: "your@email.com" },
-  { $set: { role: "admin" } }
-)
+```text
+http://localhost:5000/api
 ```
 
----
+Health check:
 
-## Environment Variables
-
-Create a `.env` file in the root directory with the following variables:
-
-```env
-# Server
-PORT=5000
-NODE_ENV=development
-
-# Database
-MONGO_URI=mongodb://localhost:27017/schoolos
-
-# JWT
-JWT_ACCESS_SECRET=your_access_secret_here
-JWT_REFRESH_SECRET=your_refresh_secret_here
-JWT_ACCESS_EXPIRES_IN=1d
-JWT_REFRESH_EXPIRES_IN=7d
+```text
+GET http://localhost:5000/api/health
 ```
 
----
-
-## API Reference
-
-All endpoints are prefixed with `/api`.
-
-### Authentication
-
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| POST | `/api/users` | Register a new user | Public |
-| POST | `/api/sessions` | Login | Public |
-| POST | `/api/logout` | Logout | Required |
-| POST | `/api/token/refresh` | Refresh access token | Public |
-| GET | `/api/users/me` | Get my profile | Required |
-| PUT | `/api/users/me` | Update my profile | Required |
-| PUT | `/api/users/me/password` | Change password | Required |
-
----
-
-### Students
-
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| GET | `/api/students` | Get all students | Required |
-| GET | `/api/students/:id` | Get student by ID | Required |
-| POST | `/api/students` | Create a student | Admin |
-| PUT | `/api/students/:id` | Update a student | Admin |
-| DELETE | `/api/students/:id` | Delete a student | Admin |
-
-**Query Parameters (GET /api/students)**
-
-| Param | Type | Description |
-|-------|------|-------------|
-| status | string | Filter by status (active, inactive, suspended, graduated) |
-| classId | string | Filter by class |
-| search | string | Search by name or studentId |
-| page | number | Page number (default: 1) |
-| limit | number | Results per page (default: 20) |
-
----
-
-### Teachers
-
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| GET | `/api/teachers` | Get all teachers | Required |
-| GET | `/api/teachers/:id` | Get teacher by ID | Required |
-| POST | `/api/teachers` | Create a teacher | Admin |
-| PUT | `/api/teachers/:id` | Update a teacher | Admin |
-| DELETE | `/api/teachers/:id` | Delete a teacher | Admin |
-
----
-
-### Classes
-
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| GET | `/api/classes` | Get all classes | Required |
-| GET | `/api/classes/:id` | Get class by ID | Required |
-| POST | `/api/classes` | Create a class | Admin |
-| PUT | `/api/classes/:id` | Update a class | Admin |
-| DELETE | `/api/classes/:id` | Delete a class | Admin |
-| POST | `/api/classes/:id/students` | Add student to class | Admin |
-| DELETE | `/api/classes/:id/students/:studentId` | Remove student from class | Admin |
-
----
-
-### Timetable
-
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| GET | `/api/timetables` | Get all timetable entries | Required |
-| GET | `/api/timetables/:id` | Get timetable entry by ID | Required |
-| POST | `/api/timetables` | Create timetable entry | Admin |
-| PUT | `/api/timetables/:id` | Update timetable entry | Admin |
-| DELETE | `/api/timetables/:id` | Delete timetable entry | Admin |
-
----
-
-### Attendance
-
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| GET | `/api/attendance` | Get all attendance records | Required |
-| GET | `/api/attendance/:id` | Get attendance by ID | Required |
-| GET | `/api/attendance/summary/:studentId` | Get student attendance summary | Required |
-| POST | `/api/attendance` | Record single attendance | Admin |
-| POST | `/api/attendance/bulk` | Record bulk attendance | Admin |
-| PUT | `/api/attendance/:id` | Update attendance | Admin |
-| DELETE | `/api/attendance/:id` | Delete attendance record | Admin |
-
----
-
-### Exams
-
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| GET | `/api/exams` | Get all exams | Required |
-| GET | `/api/exams/:id` | Get exam by ID | Required |
-| POST | `/api/exams` | Create an exam | Admin |
-| PUT | `/api/exams/:id` | Update an exam | Admin |
-| DELETE | `/api/exams/:id` | Delete an exam | Admin |
-
----
-
-### Grades
-
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| GET | `/api/grades` | Get all grades | Required |
-| GET | `/api/grades/:id` | Get grade by ID | Required |
-| GET | `/api/grades/summary/:studentId` | Get student grade summary | Required |
-| POST | `/api/grades` | Create a grade | Admin |
-| POST | `/api/grades/bulk` | Bulk create grades | Admin |
-| PUT | `/api/grades/:id` | Update a grade | Admin |
-| DELETE | `/api/grades/:id` | Delete a grade | Admin |
-
-**Grade Scale**
-
-| Percentage | Grade |
-|-----------|-------|
-| 90% and above | A+ |
-| 80% – 89% | A |
-| 70% – 79% | B |
-| 60% – 69% | C |
-| 50% – 59% | D |
-| Below 50% | F |
-
----
-
-### Fees
-
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| GET | `/api/fees` | Get all fees | Required |
-| GET | `/api/fees/:id` | Get fee by ID | Required |
-| GET | `/api/fees/summary/:studentId` | Get student fee summary | Required |
-| POST | `/api/fees` | Create a fee | Admin |
-| POST | `/api/fees/:id/payment` | Record a payment | Admin |
-| PUT | `/api/fees/:id` | Update a fee | Admin |
-| DELETE | `/api/fees/:id` | Delete a fee | Admin |
-
----
-
-### Announcements
-
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| GET | `/api/announcements` | Get all announcements | Required |
-| GET | `/api/announcements/:id` | Get announcement by ID | Required |
-| POST | `/api/announcements` | Create an announcement | Admin |
-| PUT | `/api/announcements/:id` | Update an announcement | Admin |
-| DELETE | `/api/announcements/:id` | Delete an announcement | Admin |
-
----
-
-### Messages
-
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| GET | `/api/messages/inbox` | Get inbox | Required |
-| GET | `/api/messages/sent` | Get sent messages | Required |
-| GET | `/api/messages/unread-count` | Get unread count | Required |
-| GET | `/api/messages/:id` | Get message by ID | Required |
-| POST | `/api/messages` | Send a message | Required |
-| PATCH | `/api/messages/:id/read` | Mark as read | Required |
-| DELETE | `/api/messages/:id` | Delete a message | Required |
-
----
-
-### Library
-
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| GET | `/api/library/books` | Get all books | Required |
-| GET | `/api/library/books/:id` | Get book by ID | Required |
-| GET | `/api/library/borrows` | Get all borrow records | Required |
-| POST | `/api/library/books` | Add a book | Admin |
-| PUT | `/api/library/books/:id` | Update a book | Admin |
-| DELETE | `/api/library/books/:id` | Delete a book | Admin |
-| POST | `/api/library/books/:id/borrow` | Borrow a book | Admin |
-| PATCH | `/api/library/borrows/:borrowId/return` | Return a book | Admin |
-
----
-
-### HR
-
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| GET | `/api/hr` | Get all staff | Admin |
-| GET | `/api/hr/summary` | Get HR summary | Admin |
-| GET | `/api/hr/:id` | Get staff by ID | Admin |
-| POST | `/api/hr` | Create a staff member | Admin |
-| PUT | `/api/hr/:id` | Update a staff member | Admin |
-| DELETE | `/api/hr/:id` | Delete a staff member | Admin |
-
----
-
-## Authentication
-
-SchoolOS uses a JWT-based authentication system with two tokens:
-
-- **Access Token** — short-lived token sent in the `Authorization` header as `Bearer <token>`
-- **Refresh Token** — long-lived token stored in an `httpOnly` cookie, used to generate new access tokens
-
-### User Roles
-
-| Role | Description |
-|------|-------------|
-| `admin` | Full access to all endpoints |
-| `teacher` | Access to their own classes, attendance, grades |
-| `student` | Read-only access to their own data |
-| `parent` | Read-only access to their child's data |
-
-### Request Headers
-
-For protected endpoints, include the access token in every request:
-
-```
-Authorization: Bearer <your_access_token>
-```
-
-### Response Format
-
-All responses follow this consistent structure:
+Respuesta:
 
 ```json
 {
   "success": true,
-  "data": {},
-  "message": "Operation successful"
+  "message": "NovaSchool OS API is running",
+  "environment": "development",
+  "timestamp": "..."
 }
 ```
 
-Error responses:
+## Typecheck, build y pruebas
 
-```json
-{
-  "success": false,
-  "message": "Error description",
-  "stack": "..." 
-}
+```bash
+npm run typecheck
+npm run build
+npm test
 ```
 
-> Note: `stack` is only included in development mode.
+El build se genera en `dist/`. Las pruebas usan el runner nativo de Node y verifican health, CORS, validación y errores JSON sin depender de MongoDB.
 
----
+ESLint está configurado para TypeScript, pruebas y archivos de configuración:
 
-## Contributing
+```bash
+npm run lint
+```
 
-Contributions are welcome! Please follow these steps:
+## Producción
 
-1. Fork the repository
-2. Create a new branch: `git checkout -b feat/your-feature-name`
-3. Make your changes and commit: `git commit -m "feat: add your feature"`
-4. Push to your branch: `git push origin feat/your-feature-name`
-5. Open a Pull Request
+```bash
+npm run build
+npm start
+```
 
-Please make sure your code follows the existing patterns — controllers stay thin, business logic lives in services, all inputs are validated with Zod.
+Antes de producción:
 
----
+- usar secretos aleatorios e independientes;
+- configurar una URI privada de MongoDB;
+- servir la API mediante HTTPS;
+- establecer `NODE_ENV=production`;
+- establecer `COOKIE_SECURE=true`;
+- configurar exactamente el origen del frontend en `CLIENT_URL`;
+- revisar proxy, logs, backups y límites según la infraestructura.
 
-## License
+`COOKIE_SAME_SITE=none` solo se acepta junto con `COOKIE_SECURE=true`.
 
-This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+## Administrador inicial
 
----
+El repositorio original requería cambiar el rol manualmente en MongoDB. Ahora existe un seeder seguro que crea o promueve por correo y utiliza el hook real de bcrypt del modelo.
 
-## ⭐ Support
+Definir solo en `.env`:
 
-If you find this project useful, consider giving it a star ⭐ on GitHub.
+```dotenv
+ADMIN_NAME=Nova School
+ADMIN_USERNAME=novaschool.admin
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=replace-with-a-strong-password
+```
 
-<p align="center">Built with care for schools everywhere.</p>
+Ejecutar:
+
+```bash
+npm run seed:admin
+```
+
+Reglas:
+
+- no contiene credenciales fijas;
+- exige nombre y apellido;
+- exige contraseña de al menos 12 caracteres;
+- no duplica usuarios por correo;
+- si el usuario ya existe, lo promueve a `admin` sin sustituir su contraseña;
+- si crea un usuario, la contraseña se hashea con el middleware del modelo.
+
+## Autenticación para Angular
+
+- Registro: `POST /api/users`
+- Login: `POST /api/sessions`
+- Perfil: `GET /api/users/me`
+- Refresh: `POST /api/token`
+- Logout: `POST /api/logout`
+
+Registro y login devuelven `data.accessToken` en JSON y establecen `refreshToken` en una cookie HTTP-only. Angular debe:
+
+- usar `withCredentials: true` para registro, login, refresh y logout;
+- mantener el access token en memoria;
+- enviarlo como `Authorization: Bearer <token>`;
+- intentar un refresh controlado ante `401`;
+- limpiar la sesión si refresh responde `401` o `403`;
+- no intentar refresh repetidamente ante un `403` de permisos.
+
+En desarrollo local, la cookie usa `sameSite=lax`, `secure=false` y `path=/api`. CORS permite únicamente el valor de `CLIENT_URL`, que por defecto es `http://127.0.0.1:4200`.
+
+La guía completa está en [`../docs/BACKEND_API_GUIDE.md`](../docs/BACKEND_API_GUIDE.md).
+
+## Roles y alcance escolar
+
+El modelo de autenticación tiene dos roles:
+
+- `admin`: lectura y escritura total.
+- `user`: cuenta estándar.
+
+Docente y estudiante son perfiles vinculados, no roles. Un `user` vinculado a `Teacher` o `Student` obtiene alcance de lectura sobre los datos escolares autorizados. Las mutaciones de registros escolares requieren `admin`.
+
+## Módulos
+
+- autenticación, usuarios, sesiones y administración;
+- estudiantes y docentes;
+- clases y horarios;
+- asistencia;
+- exámenes y calificaciones;
+- pagos;
+- anuncios;
+- mensajería;
+- biblioteca;
+- recursos humanos.
+
+## Estructura
+
+```text
+backend/
+├── src/
+│   ├── config/
+│   ├── controllers/
+│   ├── middlewares/
+│   ├── models/
+│   ├── routes/
+│   ├── scripts/
+│   ├── services/
+│   ├── types/
+│   ├── utils/
+│   ├── validators/
+│   ├── app.ts
+│   └── server.ts
+├── tests/
+├── scripts/
+├── docker-compose.dev.yml
+├── package.json
+├── tsconfig.json
+└── .env.example
+```
+
+## Colección de API
+
+Importar en Postman:
+
+- `../docs/api/SchoolOS.postman_collection.json`
+- `../docs/api/SchoolOS.postman_environment.json`
+
+Seleccionar el entorno local, completar las variables de cuenta y usar primero login. Postman conserva la cookie de refresh en su cookie jar y los scripts de la colección actualizan `accessToken`.
+
+## Problemas frecuentes
+
+### El servidor no inicia
+
+Si aparece `Database connection failed`, comprobar que MongoDB esté activo y que `MONGO_URI` sea válida. El backend no escucha el puerto hasta conectar a la base.
+
+### Variables inválidas
+
+El inicio falla de forma explícita si falta una variable obligatoria, el puerto es inválido, los secretos tienen menos de 32 caracteres o la combinación de cookies es insegura.
+
+### Angular recibe un error CORS
+
+Comprobar que `CLIENT_URL` coincida exactamente con el origin del navegador, sin una barra final:
+
+```dotenv
+CLIENT_URL=http://127.0.0.1:4200
+```
+
+### El refresh no envía cookie
+
+Usar `withCredentials: true`. En HTTP local, mantener `COOKIE_SECURE=false`. En producción, usar HTTPS y `COOKIE_SECURE=true`.
+
+### Un usuario autenticado recibe 403 en datos escolares
+
+El usuario debe ser `admin` o estar vinculado por `userId` a un documento `Teacher` o `Student`. Autenticación válida no equivale a alcance escolar.
+
+## Seguridad
+
+- Helmet en todas las respuestas.
+- CORS con origen único configurable y credenciales.
+- Rate limit en registro, login y refresh.
+- Validación Zod de bodies.
+- bcrypt con coste 12.
+- JWT con issuer, audience, expiración y `tokenVersion`.
+- Refresh tokens almacenados únicamente como hash SHA-256.
+- Rotación de refresh token.
+- Rechazo de cuentas bloqueadas o inactivas.
+- Errores de producción sin stack trace.
+- Traducción a `400` de IDs inválidos y validación Mongoose.
+- Conflictos únicos traducidos a `409`.
+
+## Licencia y atribución
+
+Se conserva el archivo [`LICENSE`](LICENSE) y la licencia MIT original.
+
+Proyecto basado en SchoolOS Backend, creado originalmente por Hamid Karimi y distribuido bajo licencia MIT.
+
+## Agradecimiento al autor original
+
+Gracias a [Hamid Karimi](https://github.com/hamidukarimi) por crear y publicar
+SchoolOS Backend como software de código abierto. Su trabajo proporcionó la
+base sobre la que se desarrollaron estas mejoras de seguridad, calidad y
+operación. Esta contribución se ofrece con respeto por su autoría y con el
+propósito de devolver valor a la comunidad que hizo posible el proyecto.

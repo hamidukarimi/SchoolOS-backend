@@ -37,7 +37,12 @@ const optionalAuth: RequestHandler = async (req, _res, next) => {
     }
 
     const user = await User.findById(decoded.sub);
-    if (user && user.tokenVersion === decoded.tokenVersion) {
+    if (
+      user &&
+      user.tokenVersion === decoded.tokenVersion &&
+      user.isActive &&
+      !user.isBlocked
+    ) {
       req.user = user;
     }
 

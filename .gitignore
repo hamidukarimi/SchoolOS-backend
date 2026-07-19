@@ -6,13 +6,23 @@ node_modules/
 
 # Env files
 .env
+.env.*
+!.env.example
 
 # Logs
 logs
 *.log
+coverage/
+*.tsbuildinfo
 
 # OS files
 .DS_Store
 
 # IDE folders
 .vscode/
+.idea/
+
+# Temporary files
+.cache/
+tmp/
+temp/

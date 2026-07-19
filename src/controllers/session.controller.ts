@@ -1,8 +1,6 @@
 import type { RequestHandler } from "express";
-import type { StringValue } from "ms";
 import { createSession } from "../services/session.service.js";
-import env from "../config/env.js";
-import ms from "ms";
+import { refreshCookieOptions } from "../config/cookie.js";
 
 // ─── Controllers ──────────────────────────────────────────────────────────────
 
@@ -15,12 +13,7 @@ export const create: RequestHandler = async (req, res, next) => {
 
     const result = await createSession(email, password, req);
 
-    res.cookie("refreshToken", result.refreshToken, {
-      httpOnly: true,
-      secure: env.nodeEnv === "production",
-      sameSite: "lax",
-      maxAge: ms(env.jwtRefreshExpiresIn as StringValue),
-    });
+    res.cookie("refreshToken", result.refreshToken, refreshCookieOptions());
 
     res.status(200).json({
       success: true,

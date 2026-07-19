@@ -47,8 +47,8 @@ const protect: RequestHandler = async (req, _res, next) => {
       throw new ApiError(401, "Session is no longer valid. Please sign in again.");
     }
 
-    if (!user.isActive) {
-      throw new ApiError(403, "Account is deactivated.");
+    if (!user.isActive || user.isBlocked) {
+      throw new ApiError(403, "Account is unavailable.");
     }
 
     req.user = user;

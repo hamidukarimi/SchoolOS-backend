@@ -23,7 +23,11 @@ export interface ISessionDocument extends ISession, ISessionMethods, Document {
   _id: Types.ObjectId;
 }
 
-export type SessionModel = Model<ISessionDocument, {}, ISessionMethods>;
+export type SessionModel = Model<
+  ISessionDocument,
+  Record<string, never>,
+  ISessionMethods
+>;
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 

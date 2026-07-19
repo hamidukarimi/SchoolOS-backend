@@ -1,7 +1,9 @@
 import mongoose from "mongoose";
+import type { QueryFilter } from "mongoose";
 import Book from "../models/Book.model.js";
 import type { IBook } from "../models/Book.model.js";
 import BookBorrow from "../models/BookBorrow.model.js";
+import type { IBookBorrow } from "../models/BookBorrow.model.js";
 import type { IUserDocument } from "../models/User.model.js";
 import type { SchoolReadScope } from "../types/schoolReadScope.js";
 import ApiError from "../utils/ApiError.js";
@@ -30,7 +32,7 @@ export const getAllBooksService = async (filters: {
 }) => {
   const { category, status, search, page = 1, limit = 20 } = filters;
 
-  const query: any = {};
+  const query: QueryFilter<IBook> = {};
 
   if (category) query.category = { $regex: category, $options: "i" };
   if (status) query.status = status;
@@ -131,11 +133,12 @@ export const borrowBookService = async (
     throw new ApiError(400, "No copies available for borrowing");
   }
 
-  const activeBorrow = await BookBorrow.findOne({
+  const activeBorrowQuery: QueryFilter<IBookBorrow> = {
     bookId,
     borrowerId: data.borrowerId,
     status: "borrowed",
-  } as any);
+  };
+  const activeBorrow = await BookBorrow.findOne(activeBorrowQuery);
 
   if (activeBorrow) {
     throw new ApiError(400, "Borrower already has an active borrow for this book");
