@@ -3,6 +3,7 @@ import {
   createStudent,
   getAllStudents,
   getStudentById,
+  getStudentClasses,
   updateStudent,
   deleteStudent,
 } from "../controllers/student.controller.js";
@@ -21,6 +22,7 @@ router.use(protect);
 router.use(loadSchoolReadScope);
 
 router.get("/", getAllStudents);
+router.get("/:id/classes", getStudentClasses);
 router.get("/:id", getStudentById);
 
 router.post("/", adminOnly, validate(createStudentSchema), createStudent);

@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import Class from "../models/Class.model.js";
 import Student from "../models/Student.model.js";
 import User from "../models/User.model.js";
 import type { IStudent } from "../models/Student.model.js";
@@ -158,6 +159,66 @@ export const getStudentByIdService = async (
   }
 
   return student;
+};
+
+function enrolledTeacher(value: unknown): {
+  id: string;
+  firstName: string;
+  lastName: string;
+  teacherId: string;
+} | null {
+  if (!value || typeof value !== "object" || !("firstName" in value)) return null;
+  const teacher = value as {
+    _id?: { toString(): string };
+    firstName?: string;
+    lastName?: string;
+    teacherId?: string;
+  };
+  if (!teacher._id) return null;
+  return {
+    id: teacher._id.toString(),
+    firstName: teacher.firstName ?? "",
+    lastName: teacher.lastName ?? "",
+    teacherId: teacher.teacherId ?? "",
+  };
+}
+
+export const getStudentEnrolledClassesService = async (
+  id: string,
+  scope: SchoolReadScope,
+) => {
+  assertSchoolDataAccess(scope);
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    throw new ApiError(400, "A valid id is required");
+  }
+  if (scope.kind === "student" && id !== scope.studentDocId.toString()) {
+    throw new ApiError(403, "You can only view your own student record.");
+  }
+  if (scope.kind === "teacher" && !idInObjectIdList(id, scope.rosterStudentIds)) {
+    throw new ApiError(403, "You do not have access to this student.");
+  }
+
+  const student = await Student.findById(id).select("_id");
+  if (!student) {
+    throw new ApiError(404, "Student not found");
+  }
+
+  const classes = await Class.find({ students: student._id })
+    .select("name section grade academicYear teacherId")
+    .populate("teacherId", "firstName lastName teacherId")
+    .sort({ name: 1, section: 1, academicYear: 1, _id: 1 })
+    .lean();
+
+  return {
+    classes: classes.map((record) => ({
+      id: record._id.toString(),
+      name: record.name,
+      section: record.section,
+      grade: record.grade,
+      academicYear: record.academicYear,
+      teacher: enrolledTeacher(record.teacherId),
+    })),
+  };
 };
 
 export const updateStudentService = async (

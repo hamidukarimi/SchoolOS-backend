@@ -3,6 +3,7 @@ import {
   createStudentService,
   getAllStudentsService,
   getStudentByIdService,
+  getStudentEnrolledClassesService,
   updateStudentService,
   deleteStudentService,
 } from "../services/student.service.js";
@@ -83,6 +84,32 @@ export const getStudentById = async (
       success: true,
       data: student,
       message: "Student fetched successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getStudentClasses = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const scope = req.schoolReadScope;
+    if (!scope) throw new ApiError(500, "School read scope not initialized");
+
+    const { id } = req.params;
+    if (!id || Array.isArray(id)) {
+      res.status(400).json({ success: false, message: "Student ID is required" });
+      return;
+    }
+
+    const result = await getStudentEnrolledClassesService(id, scope);
+    res.status(200).json({
+      success: true,
+      data: result,
+      message: "Classes fetched successfully",
     });
   } catch (error) {
     next(error);
