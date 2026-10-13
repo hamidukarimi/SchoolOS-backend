@@ -1,5 +1,11 @@
 import { z } from "zod";
 
+export const userDirectoryQuerySchema = z.object({
+  search: z.string().trim().max(80).optional(),
+  page: z.coerce.number().int().min(1).optional(),
+  limit: z.coerce.number().int().min(1).max(20).optional(),
+});
+
 export const registerSchema = z.object({
   firstname: z
     .string()

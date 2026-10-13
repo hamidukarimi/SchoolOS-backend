@@ -1,6 +1,6 @@
 import type { RequestHandler } from "express";
 import type { StringValue } from "ms";
-import { createUser, changePassword, getMyProfileService, updateProfileService } from "../services/user.service.js";
+import { createUser, changePassword, getMyProfileService, searchUserDirectory, updateProfileService } from "../services/user.service.js";
 import ApiError from "../utils/ApiError.js";
 import env from "../config/env.js";
 import ms from "ms";
@@ -53,6 +53,20 @@ export const updatePassword: RequestHandler = async (req, res, next) => {
     });
   } catch (err) {
     next(err);
+  }
+};
+
+export const searchDirectory: RequestHandler = async (req, res, next) => {
+  try {
+    const query = req.query as { search?: string; page?: number; limit?: number };
+    const result = await searchUserDirectory({
+      ...(query.search ? { search: query.search } : {}),
+      ...(query.page ? { page: query.page } : {}),
+      ...(query.limit ? { limit: query.limit } : {}),
+    });
+    res.status(200).json({ success: true, data: result, message: "Users fetched successfully" });
+  } catch (error) {
+    next(error);
   }
 };
 

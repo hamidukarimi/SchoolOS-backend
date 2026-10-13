@@ -1,4 +1,6 @@
+import mongoose from "mongoose";
 import Student from "../models/Student.model.js";
+import User from "../models/User.model.js";
 import type { IStudent } from "../models/Student.model.js";
 import ApiError from "../utils/ApiError.js";
 import type { IUserDocument } from "../models/User.model.js";
@@ -9,22 +11,69 @@ import {
   idInObjectIdList,
 } from "../utils/schoolReadAccess.js";
 
+function duplicateProfile(error: unknown): boolean {
+  return Boolean(error && typeof error === "object" && "code" in error && error.code === 11000);
+}
+
 export const createStudentService = async (
-  data: Partial<IStudent>,
+  data: {
+    userId?: string;
+    studentId?: string;
+    firstName?: string;
+    lastName?: string;
+    dateOfBirth?: string;
+    gender?: IStudent["gender"];
+    phone?: string;
+    address?: string;
+    classId?: string;
+    parentName?: string;
+    parentPhone?: string;
+    parentEmail?: string;
+    enrollmentDate?: string;
+    status?: IStudent["status"];
+  },
   actor: IUserDocument,
 ) => {
   assertSchoolMutationAllowed(actor);
+  if (!data.userId || !mongoose.Types.ObjectId.isValid(data.userId)) {
+    throw new ApiError(400, "A valid user id is required");
+  }
+  const account = await User.findById(data.userId).select("_id");
+  if (!account) throw new ApiError(404, "User account not found");
+  if (!data.studentId || !data.firstName || !data.lastName || !data.dateOfBirth || !data.gender || !data.parentName || !data.parentPhone) {
+    throw new ApiError(400, "Student profile is missing required fields");
+  }
 
   const existing = await Student.findOne({
     $or: [{ studentId: data.studentId }, { userId: data.userId }],
   } as Record<string, unknown>);
-
   if (existing) {
     throw new ApiError(400, "Student with this ID or user already exists");
   }
 
-  const student = await Student.create(data);
-  return student;
+  try {
+    return await Student.create({
+      userId: data.userId,
+      studentId: data.studentId,
+      firstName: data.firstName,
+      lastName: data.lastName,
+      dateOfBirth: data.dateOfBirth,
+      gender: data.gender,
+      ...(data.phone ? { phone: data.phone } : {}),
+      ...(data.address ? { address: data.address } : {}),
+      ...(data.classId ? { classId: data.classId } : {}),
+      parentName: data.parentName,
+      parentPhone: data.parentPhone,
+      ...(data.parentEmail ? { parentEmail: data.parentEmail } : {}),
+      ...(data.enrollmentDate ? { enrollmentDate: data.enrollmentDate } : {}),
+      ...(data.status ? { status: data.status } : {}),
+    });
+  } catch (error) {
+    if (duplicateProfile(error)) {
+      throw new ApiError(400, "Student with this ID or user already exists");
+    }
+    throw error;
+  }
 };
 
 export const getAllStudentsService = async (

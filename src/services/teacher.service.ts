@@ -1,6 +1,7 @@
 import type { Types } from "mongoose";
 import mongoose from "mongoose";
 import Teacher from "../models/Teacher.model.js";
+import User from "../models/User.model.js";
 import Class from "../models/Class.model.js";
 import type { ITeacher } from "../models/Teacher.model.js";
 import type { IUserDocument } from "../models/User.model.js";
@@ -29,22 +30,69 @@ const visibleTeacherIdsForStudent = async (
   return [...set].map((id) => new mongoose.Types.ObjectId(id));
 };
 
+function duplicateProfile(error: unknown): boolean {
+  return Boolean(error && typeof error === "object" && "code" in error && error.code === 11000);
+}
+
 export const createTeacherService = async (
-  data: Partial<ITeacher>,
+  data: {
+    userId?: string;
+    teacherId?: string;
+    firstName?: string;
+    lastName?: string;
+    dateOfBirth?: string;
+    gender?: ITeacher["gender"];
+    phone?: string;
+    address?: string;
+    subject?: string;
+    qualification?: string;
+    experience?: number;
+    salary?: number;
+    joinDate?: string;
+    status?: ITeacher["status"];
+  },
   actor: IUserDocument,
 ) => {
   assertSchoolMutationAllowed(actor);
+  if (!data.userId || !mongoose.Types.ObjectId.isValid(data.userId)) {
+    throw new ApiError(400, "A valid user id is required");
+  }
+  const account = await User.findById(data.userId).select("_id");
+  if (!account) throw new ApiError(404, "User account not found");
+  if (!data.teacherId || !data.firstName || !data.lastName || !data.dateOfBirth || !data.gender) {
+    throw new ApiError(400, "Teacher profile is missing required fields");
+  }
 
   const existing = await Teacher.findOne({
     $or: [{ teacherId: data.teacherId }, { userId: data.userId }],
   } as Record<string, unknown>);
-
   if (existing) {
     throw new ApiError(400, "Teacher with this ID or user already exists");
   }
 
-  const teacher = await Teacher.create(data);
-  return teacher;
+  try {
+    return await Teacher.create({
+      userId: data.userId,
+      teacherId: data.teacherId,
+      firstName: data.firstName,
+      lastName: data.lastName,
+      dateOfBirth: data.dateOfBirth,
+      gender: data.gender,
+      ...(data.phone ? { phone: data.phone } : {}),
+      ...(data.address ? { address: data.address } : {}),
+      ...(data.subject ? { subject: data.subject } : {}),
+      ...(data.qualification ? { qualification: data.qualification } : {}),
+      ...(data.experience !== undefined ? { experience: data.experience } : {}),
+      ...(data.salary !== undefined ? { salary: data.salary } : {}),
+      ...(data.joinDate ? { joinDate: data.joinDate } : {}),
+      ...(data.status ? { status: data.status } : {}),
+    });
+  } catch (error) {
+    if (duplicateProfile(error)) {
+      throw new ApiError(400, "Teacher with this ID or user already exists");
+    }
+    throw error;
+  }
 };
 
 export const getAllTeachersService = async (

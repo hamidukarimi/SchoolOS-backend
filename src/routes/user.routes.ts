@@ -1,16 +1,25 @@
 import { Router } from "express";
 import * as userController from "../controllers/user.controller.js";
 import protect from "../middlewares/auth.middleware.js";
+import adminOnly from "../middlewares/adminOnly.middleware.js";
 import { registerLimiter } from "../middlewares/rateLimit.middleware.js";
 import validate from "../middlewares/validate.middleware.js";
 import {
   registerSchema,
   changePasswordSchema,
   updateProfileSchema,
+  userDirectoryQuerySchema,
 } from "../validators/user.validator.js";
 
 const router = Router();
 
+router.get(
+  "/",
+  protect,
+  adminOnly,
+  validate(userDirectoryQuerySchema, "query"),
+  userController.searchDirectory,
+);
 router.post(
   "/",
   registerLimiter,
