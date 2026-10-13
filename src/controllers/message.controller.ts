@@ -7,6 +7,10 @@ import {
   markAsReadService,
   deleteMessageService,
   getUnreadCountService,
+  listConversationsService,
+  getConversationService,
+  markConversationReadService,
+  listEligibleRecipientsService,
 } from "../services/message.service.js";
 import ApiError from "../utils/ApiError.js";
 
@@ -138,6 +142,83 @@ export const deleteMessage = async (
     }
     await deleteMessageService(id, req.user._id.toString());
     res.status(200).json({ success: true, data: null, message: "Message deleted successfully" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const listConversations = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (!req.user) throw new ApiError(401, "Unauthorized");
+    const page = req.query.page ? Number(req.query.page) : undefined;
+    const limit = req.query.limit ? Number(req.query.limit) : undefined;
+    const result = await listConversationsService(req.user._id.toString(), {
+      ...(page !== undefined ? { page } : {}),
+      ...(limit !== undefined ? { limit } : {}),
+    });
+    res.status(200).json({ success: true, data: result, message: "Conversations fetched successfully" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getConversation = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (!req.user) throw new ApiError(401, "Unauthorized");
+    const { participantId } = req.params;
+    if (!participantId || Array.isArray(participantId)) {
+      res.status(400).json({ success: false, message: "A valid user id is required" });
+      return;
+    }
+    const page = req.query.page ? Number(req.query.page) : undefined;
+    const limit = req.query.limit ? Number(req.query.limit) : undefined;
+    const result = await getConversationService(req.user._id.toString(), participantId, {
+      ...(page !== undefined ? { page } : {}),
+      ...(limit !== undefined ? { limit } : {}),
+    });
+    res.status(200).json({ success: true, data: result, message: "Conversation fetched successfully" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const markConversationRead = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (!req.user) throw new ApiError(401, "Unauthorized");
+    const { participantId } = req.params;
+    if (!participantId || Array.isArray(participantId)) {
+      res.status(400).json({ success: false, message: "A valid user id is required" });
+      return;
+    }
+    const result = await markConversationReadService(req.user._id.toString(), participantId);
+    res.status(200).json({ success: true, data: result, message: "Conversation marked as read" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const listRecipients = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (!req.user) throw new ApiError(401, "Unauthorized");
+    const search = typeof req.query.search === "string" ? req.query.search : "";
+    const result = await listEligibleRecipientsService(req.user._id.toString(), search);
+    res.status(200).json({ success: true, data: result, message: "Recipients fetched successfully" });
   } catch (error) {
     next(error);
   }

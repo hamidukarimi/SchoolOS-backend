@@ -1,9 +1,11 @@
 import { z } from "zod";
 
+const userId = z.string().regex(/^[a-f\d]{24}$/i, "A valid user id is required");
+
 export const createMessageSchema = z.object({
-  receiverId: z.string().min(1, "Receiver ID is required"),
-  subject: z.string().min(1, "Subject is required"),
-  content: z.string().min(1, "Content is required"),
+  receiverId: userId,
+  subject: z.string().trim().min(1, "Subject is required"),
+  content: z.string().trim().min(1, "Content is required"),
 });
 
 export const updateMessageSchema = z.object({
