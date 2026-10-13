@@ -1,7 +1,9 @@
 import { z } from "zod";
 
+const userId = z.string().regex(/^[a-f\d]{24}$/i, "A valid user id is required");
+
 export const createStaffSchema = z.object({
-  userId: z.string().min(1, "User ID is required"),
+  userId,
   staffId: z.string().min(1, "Staff ID is required"),
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
