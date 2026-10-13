@@ -8,6 +8,7 @@ import {
   assertSchoolMutationAllowed,
   idInObjectIdList,
 } from "../utils/schoolReadAccess.js";
+import { notifyExamSaved } from "./notificationEvents.js";
 
 export const createExamService = async (
   data: Partial<IExam>,
@@ -16,6 +17,7 @@ export const createExamService = async (
   assertSchoolMutationAllowed(actor);
 
   const exam = await Exam.create(data);
+  await notifyExamSaved(exam);
   return exam;
 };
 
@@ -125,6 +127,7 @@ export const updateExamService = async (
 ) => {
   assertSchoolMutationAllowed(actor);
 
+  const previous = await Exam.findById(id);
   const exam = await Exam.findByIdAndUpdate(id, data, {
     new: true,
     runValidators: true,
@@ -134,6 +137,8 @@ export const updateExamService = async (
     throw new ApiError(404, "Exam not found");
   }
 
+  if (previous) await notifyExamSaved(exam, previous);
+  else await notifyExamSaved(exam);
   return exam;
 };
 

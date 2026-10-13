@@ -8,6 +8,7 @@ import {
   assertSchoolMutationAllowed,
   idInObjectIdList,
 } from "../utils/schoolReadAccess.js";
+import { notifyTimetableSaved } from "./notificationEvents.js";
 
 export const createTimetableService = async (
   data: Partial<ITimetable>,
@@ -33,6 +34,7 @@ export const createTimetableService = async (
   }
 
   const timetable = await Timetable.create(data);
+  await notifyTimetableSaved(timetable);
   return timetable;
 };
 
@@ -137,6 +139,7 @@ export const updateTimetableService = async (
 ) => {
   assertSchoolMutationAllowed(actor);
 
+  const previous = await Timetable.findById(id);
   const timetable = await Timetable.findByIdAndUpdate(id, data, {
     new: true,
     runValidators: true,
@@ -146,6 +149,8 @@ export const updateTimetableService = async (
     throw new ApiError(404, "Timetable entry not found");
   }
 
+  if (previous) await notifyTimetableSaved(timetable, previous);
+  else await notifyTimetableSaved(timetable);
   return timetable;
 };
 

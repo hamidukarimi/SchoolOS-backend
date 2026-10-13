@@ -8,6 +8,7 @@ import {
   assertSchoolMutationAllowed,
   idInObjectIdList,
 } from "../utils/schoolReadAccess.js";
+import { notifyGradeSaved } from "./notificationEvents.js";
 
 export const createGradeService = async (
   data: Partial<IGrade>,
@@ -28,6 +29,7 @@ export const createGradeService = async (
   }
 
   const grade = await Grade.create(data);
+  await notifyGradeSaved(grade);
   return grade;
 };
 
@@ -210,6 +212,7 @@ export const updateGradeService = async (
 ) => {
   assertSchoolMutationAllowed(actor);
 
+  const previous = await Grade.findById(id).select("marksObtained totalMarks");
   const grade = await Grade.findByIdAndUpdate(id, data, {
     new: true,
     runValidators: true,
@@ -219,6 +222,12 @@ export const updateGradeService = async (
     throw new ApiError(404, "Grade not found");
   }
 
+  if (previous) {
+    await notifyGradeSaved(grade, {
+      marksObtained: previous.marksObtained,
+      totalMarks: previous.totalMarks,
+    });
+  }
   return grade;
 };
 

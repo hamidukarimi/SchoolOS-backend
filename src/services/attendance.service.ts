@@ -8,6 +8,7 @@ import {
   assertSchoolMutationAllowed,
   idInObjectIdList,
 } from "../utils/schoolReadAccess.js";
+import { notifyAttendanceSaved } from "./notificationEvents.js";
 
 export const createAttendanceService = async (
   data: Partial<IAttendance>,
@@ -29,6 +30,7 @@ export const createAttendanceService = async (
   }
 
   const attendance = await Attendance.create(data);
+  await notifyAttendanceSaved(attendance);
   return attendance;
 };
 
@@ -208,6 +210,7 @@ export const updateAttendanceService = async (
 ) => {
   assertSchoolMutationAllowed(actor);
 
+  const previous = await Attendance.findById(id).select("status");
   const attendance = await Attendance.findByIdAndUpdate(id, data, {
     new: true,
     runValidators: true,
@@ -217,6 +220,7 @@ export const updateAttendanceService = async (
     throw new ApiError(404, "Attendance record not found");
   }
 
+  await notifyAttendanceSaved(attendance, previous?.status ?? attendance.status);
   return attendance;
 };
 

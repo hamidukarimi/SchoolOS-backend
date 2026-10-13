@@ -17,7 +17,16 @@ const validate =
       return;
     }
 
-    req[target] = result.data;
+    if (target === "query") {
+      Object.defineProperty(req, "query", {
+        value: result.data,
+        writable: true,
+        configurable: true,
+        enumerable: true,
+      });
+    } else {
+      req[target] = result.data;
+    }
     next();
   };
 
