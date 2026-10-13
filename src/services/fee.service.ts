@@ -1,5 +1,7 @@
+import mongoose from "mongoose";
 import Fee from "../models/Fee.model.js";
 import type { IFee } from "../models/Fee.model.js";
+import Student from "../models/Student.model.js";
 import ApiError from "../utils/ApiError.js";
 import type { IUserDocument } from "../models/User.model.js";
 import type { SchoolReadScope } from "../types/schoolReadScope.js";
@@ -9,13 +11,37 @@ import {
   idInObjectIdList,
 } from "../utils/schoolReadAccess.js";
 
+function requireObjectId(id: string): void {
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    throw new ApiError(400, "A valid id is required");
+  }
+}
+
 export const createFeeService = async (
   data: Partial<IFee>,
   actor: IUserDocument,
 ) => {
   assertSchoolMutationAllowed(actor);
+  const studentId = data.studentId ? String(data.studentId) : "";
+  requireObjectId(studentId);
+  const student = await Student.findById(studentId).select("_id");
+  if (!student) {
+    throw new ApiError(404, "Student not found");
+  }
+  if (!data.title || data.amount === undefined || !data.dueDate || !data.academicYear || !data.term) {
+    throw new ApiError(400, "Fee record is missing required fields");
+  }
 
-  const fee = await Fee.create(data);
+  const fee = await Fee.create({
+    studentId,
+    title: data.title,
+    ...(data.description ? { description: data.description } : {}),
+    amount: data.amount,
+    dueDate: data.dueDate,
+    academicYear: data.academicYear,
+    term: data.term,
+    ...(data.status ? { status: data.status } : {}),
+  });
   return fee;
 };
 
@@ -34,6 +60,10 @@ export const getAllFeesService = async (
 
   const { studentId, status, academicYear, term, page = 1, limit = 20 } =
     filters;
+
+  if (studentId && scope.kind !== "student") {
+    requireObjectId(studentId);
+  }
 
   const query: Record<string, unknown> = {};
 
@@ -79,6 +109,7 @@ export const getAllFeesService = async (
 
 export const getFeeByIdService = async (id: string, scope: SchoolReadScope) => {
   assertSchoolDataAccess(scope);
+  requireObjectId(id);
 
   const fee = await Fee.findById(id).populate(
     "studentId",
@@ -118,6 +149,7 @@ export const updateFeeService = async (
   actor: IUserDocument,
 ) => {
   assertSchoolMutationAllowed(actor);
+  requireObjectId(id);
 
   const fee = await Fee.findByIdAndUpdate(id, data, {
     new: true,
@@ -136,6 +168,7 @@ export const deleteFeeService = async (
   actor: IUserDocument,
 ) => {
   assertSchoolMutationAllowed(actor);
+  requireObjectId(id);
 
   const fee = await Fee.findByIdAndDelete(id);
 
@@ -153,6 +186,7 @@ export const recordPaymentService = async (
   actor: IUserDocument,
 ) => {
   assertSchoolMutationAllowed(actor);
+  requireObjectId(id);
 
   const fee = await Fee.findById(id);
 
@@ -184,6 +218,7 @@ export const getStudentFeeSummaryService = async (
   scope: SchoolReadScope,
 ) => {
   assertSchoolDataAccess(scope);
+  requireObjectId(studentId);
 
   if (scope.kind === "student") {
     if (studentId !== scope.studentDocId.toString()) {

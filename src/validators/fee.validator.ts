@@ -1,7 +1,9 @@
 import { z } from "zod";
 
+const objectId = z.string().regex(/^[a-f\d]{24}$/i, "A valid id is required");
+
 export const createFeeSchema = z.object({
-  studentId: z.string().min(1, "Student ID is required"),
+  studentId: objectId,
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
   amount: z.number().min(0, "Amount must be at least 0"),
