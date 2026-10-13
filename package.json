@@ -10,7 +10,7 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
-    "test": "tsx --test --test-concurrency=1 tests/notification.rules.test.ts tests/notification.api.test.ts tests/announcement.access.test.ts tests/announcement.api.test.ts tests/profile-creation.api.test.ts tests/student-classes.api.test.ts tests/fee.api.test.ts tests/library.api.test.ts tests/hr.api.test.ts tests/message.api.test.ts tests/report.api.test.ts",
+    "test": "tsx --test --test-concurrency=1 tests/notification.rules.test.ts tests/notification.api.test.ts tests/announcement.access.test.ts tests/announcement.api.test.ts tests/profile-creation.api.test.ts tests/student-classes.api.test.ts tests/fee.api.test.ts tests/library.api.test.ts tests/hr.api.test.ts tests/message.api.test.ts tests/report.api.test.ts tests/account.api.test.ts",
     "start": "node dist/server.js",
     "migrate:user-social-fields": "tsx scripts/migrate-remove-user-social-fields.ts"
   },

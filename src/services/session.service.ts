@@ -38,6 +38,10 @@ export const createSession = async (
     throw new ApiError(401, "Invalid credentials");
   }
 
+  if (!user.isActive) {
+    throw new ApiError(403, "Account is deactivated.");
+  }
+
   const accessToken = generateAccessToken(user);
   const refreshToken = generateRefreshToken(user);
 

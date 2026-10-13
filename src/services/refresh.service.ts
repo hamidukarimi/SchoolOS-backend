@@ -60,12 +60,16 @@ export const handleRefreshToken = async (
     throw new ApiError(403, "Invalid refresh token");
   }
 
-  if (
-    !decoded.sub ||
-    typeof decoded.tokenVersion !== "number" ||
-    decoded.sub !== user._id.toString() ||
-    decoded.tokenVersion !== user.tokenVersion
-  ) {
+  if (!decoded.sub || typeof decoded.tokenVersion !== "number" || decoded.sub !== user._id.toString()) {
+    throw new ApiError(403, "Invalid refresh token");
+  }
+
+  if (!user.isActive) {
+    await session.deleteOne();
+    throw new ApiError(403, "Account is deactivated.");
+  }
+
+  if (decoded.tokenVersion !== user.tokenVersion) {
     throw new ApiError(403, "Invalid refresh token");
   }
 
