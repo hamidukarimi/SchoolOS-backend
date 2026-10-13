@@ -2,6 +2,8 @@ import mongoose from "mongoose";
 import Book from "../models/Book.model.js";
 import type { IBook } from "../models/Book.model.js";
 import BookBorrow from "../models/BookBorrow.model.js";
+import Student from "../models/Student.model.js";
+import Teacher from "../models/Teacher.model.js";
 import type { IUserDocument } from "../models/User.model.js";
 import type { SchoolReadScope } from "../types/schoolReadScope.js";
 import ApiError from "../utils/ApiError.js";
@@ -11,23 +13,56 @@ import {
   idInObjectIdList,
 } from "../utils/schoolReadAccess.js";
 
+function requireObjectId(id: string): void {
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    throw new ApiError(400, "A valid id is required");
+  }
+}
+
+function duplicateIsbn(error: unknown): boolean {
+  return Boolean(error && typeof error === "object" && "code" in error && error.code === 11000);
+}
+
 export const createBookService = async (
   data: Partial<IBook>,
   actor: IUserDocument,
 ) => {
   assertSchoolMutationAllowed(actor);
+  if (!data.title || !data.author || !data.category || data.totalCopies === undefined || data.availableCopies === undefined) {
+    throw new ApiError(400, "Book is missing required fields");
+  }
 
-  const book = await Book.create(data);
-  return book;
+  try {
+    return await Book.create({
+      title: data.title,
+      author: data.author,
+      ...(data.isbn ? { isbn: data.isbn } : {}),
+      category: data.category,
+      totalCopies: data.totalCopies,
+      availableCopies: data.availableCopies,
+      ...(data.description ? { description: data.description } : {}),
+      ...(data.publishedYear !== undefined ? { publishedYear: data.publishedYear } : {}),
+      ...(data.status ? { status: data.status } : {}),
+    });
+  } catch (error) {
+    if (duplicateIsbn(error)) {
+      throw new ApiError(400, "A book with this ISBN already exists");
+    }
+    throw error;
+  }
 };
 
-export const getAllBooksService = async (filters: {
-  category?: string;
-  status?: string;
-  search?: string;
-  page?: number;
-  limit?: number;
-}) => {
+export const getAllBooksService = async (
+  filters: {
+    category?: string;
+    status?: string;
+    search?: string;
+    page?: number;
+    limit?: number;
+  },
+  scope: SchoolReadScope,
+) => {
+  assertSchoolDataAccess(scope);
   const { category, status, search, page = 1, limit = 20 } = filters;
 
   const query: any = {};
@@ -57,7 +92,9 @@ export const getAllBooksService = async (filters: {
   };
 };
 
-export const getBookByIdService = async (id: string) => {
+export const getBookByIdService = async (id: string, scope: SchoolReadScope) => {
+  assertSchoolDataAccess(scope);
+  requireObjectId(id);
   const book = await Book.findById(id);
 
   if (!book) {
@@ -73,17 +110,26 @@ export const updateBookService = async (
   actor: IUserDocument,
 ) => {
   assertSchoolMutationAllowed(actor);
+  requireObjectId(id);
 
-  const book = await Book.findByIdAndUpdate(id, data, {
-    new: true,
-    runValidators: true,
-  });
+  try {
+    const book = await Book.findByIdAndUpdate(id, data, {
+      new: true,
+      runValidators: true,
+    });
 
-  if (!book) {
-    throw new ApiError(404, "Book not found");
+    if (!book) {
+      throw new ApiError(404, "Book not found");
+    }
+
+    return book;
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
+    if (duplicateIsbn(error)) {
+      throw new ApiError(400, "A book with this ISBN already exists");
+    }
+    throw error;
   }
-
-  return book;
 };
 
 export const deleteBookService = async (
@@ -91,6 +137,7 @@ export const deleteBookService = async (
   actor: IUserDocument,
 ) => {
   assertSchoolMutationAllowed(actor);
+  requireObjectId(id);
 
   const activeBorrows = await BookBorrow.countDocuments({
     bookId: id,
@@ -120,6 +167,16 @@ export const borrowBookService = async (
   actor: IUserDocument,
 ) => {
   assertSchoolMutationAllowed(actor);
+  requireObjectId(bookId);
+  requireObjectId(data.borrowerId);
+
+  if (data.borrowerType === "student") {
+    const student = await Student.findById(data.borrowerId).select("_id");
+    if (!student) throw new ApiError(404, "Student not found");
+  } else {
+    const teacher = await Teacher.findById(data.borrowerId).select("_id");
+    if (!teacher) throw new ApiError(404, "Teacher not found");
+  }
 
   const book = await Book.findById(bookId);
 
@@ -163,6 +220,7 @@ export const returnBookService = async (
   actor: IUserDocument,
 ) => {
   assertSchoolMutationAllowed(actor);
+  requireObjectId(borrowId);
 
   const borrow = await BookBorrow.findById(borrowId);
 
@@ -201,6 +259,8 @@ export const getAllBorrowsService = async (
   assertSchoolDataAccess(scope);
 
   const { borrowerId, bookId, status, page = 1, limit = 20 } = filters;
+  if (borrowerId) requireObjectId(borrowerId);
+  if (bookId) requireObjectId(bookId);
 
   const query: Record<string, unknown> = {};
 
@@ -259,12 +319,38 @@ export const getAllBorrowsService = async (
       .populate("bookId", "title author isbn")
       .skip(skip)
       .limit(limit)
-      .sort({ createdAt: -1 }),
+      .sort({ createdAt: -1 })
+      .lean(),
     BookBorrow.countDocuments(query),
   ]);
 
+  const studentIds = borrows
+    .filter((borrow) => borrow.borrowerType === "student")
+    .map((borrow) => borrow.borrowerId);
+  const teacherIds = borrows
+    .filter((borrow) => borrow.borrowerType === "teacher")
+    .map((borrow) => borrow.borrowerId);
+  const [students, teachers] = await Promise.all([
+    studentIds.length
+      ? Student.find({ _id: { $in: studentIds } }).select("firstName lastName studentId").lean()
+      : [],
+    teacherIds.length
+      ? Teacher.find({ _id: { $in: teacherIds } }).select("firstName lastName teacherId").lean()
+      : [],
+  ]);
+  const studentById = new Map(students.map((student) => [student._id.toString(), student]));
+  const teacherById = new Map(teachers.map((teacher) => [teacher._id.toString(), teacher]));
+
   return {
-    borrows,
+    borrows: borrows.map((borrow) => {
+      const borrowerKey = borrow.borrowerId.toString();
+      const borrower =
+        borrow.borrowerType === "student" ? studentById.get(borrowerKey) : teacherById.get(borrowerKey);
+      return {
+        ...borrow,
+        borrowerId: borrower ?? borrow.borrowerId,
+      };
+    }),
     total,
     page,
     totalPages: Math.ceil(total / limit),

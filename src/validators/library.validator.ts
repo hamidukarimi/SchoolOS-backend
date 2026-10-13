@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+const objectId = z.string().regex(/^[a-f\d]{24}$/i, "A valid id is required");
+
 export const createBookSchema = z.object({
   title: z.string().min(1, "Title is required"),
   author: z.string().min(1, "Author is required"),
@@ -25,7 +27,7 @@ export const updateBookSchema = z.object({
 });
 
 export const borrowBookSchema = z.object({
-  borrowerId: z.string().min(1, "Borrower ID is required"),
+  borrowerId: objectId,
   borrowerType: z.enum(["student", "teacher"] as const, {
     message: "Borrower type must be student or teacher",
   }),

@@ -47,7 +47,9 @@ export const getAllBooks = async (
     if (page) filters.page = Number(page);
     if (limit) filters.limit = Number(limit);
 
-    const result = await getAllBooksService(filters);
+    const scope = req.schoolReadScope;
+    if (!scope) throw new ApiError(500, "School read scope not initialized");
+    const result = await getAllBooksService(filters, scope);
     res.status(200).json({ success: true, data: result, message: "Books fetched successfully" });
   } catch (error) {
     next(error);
@@ -65,7 +67,9 @@ export const getBookById = async (
       res.status(400).json({ success: false, message: "Book ID is required" });
       return;
     }
-    const book = await getBookByIdService(id);
+    const scope = req.schoolReadScope;
+    if (!scope) throw new ApiError(500, "School read scope not initialized");
+    const book = await getBookByIdService(id, scope);
     res.status(200).json({ success: true, data: book, message: "Book fetched successfully" });
   } catch (error) {
     next(error);
