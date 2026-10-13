@@ -11,7 +11,9 @@ import loadSchoolReadScope from "../middlewares/schoolReadScope.middleware.js";
 import adminOnly from "../middlewares/adminOnly.middleware.js";
 import validate from "../middlewares/validate.middleware.js";
 import {
+  announcementIdParamsSchema,
   createAnnouncementSchema,
+  listAnnouncementsQuerySchema,
   updateAnnouncementSchema,
 } from "../validators/announcement.validator.js";
 
@@ -20,11 +22,17 @@ const router = Router();
 router.use(protect);
 router.use(loadSchoolReadScope);
 
-router.get("/", getAllAnnouncements);
-router.get("/:id", getAnnouncementById);
+router.get("/", validate(listAnnouncementsQuerySchema, "query"), getAllAnnouncements);
+router.get("/:id", validate(announcementIdParamsSchema, "params"), getAnnouncementById);
 
 router.post("/", adminOnly, validate(createAnnouncementSchema), createAnnouncement);
-router.put("/:id", adminOnly, validate(updateAnnouncementSchema), updateAnnouncement);
-router.delete("/:id", adminOnly, deleteAnnouncement);
+router.put(
+  "/:id",
+  adminOnly,
+  validate(announcementIdParamsSchema, "params"),
+  validate(updateAnnouncementSchema),
+  updateAnnouncement,
+);
+router.delete("/:id", adminOnly, validate(announcementIdParamsSchema, "params"), deleteAnnouncement);
 
 export default router;
