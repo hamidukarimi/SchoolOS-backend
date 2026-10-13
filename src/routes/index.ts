@@ -18,6 +18,7 @@ import notificationRoutes from "./notification.routes.js";
 import libraryRoutes from "./library.routes.js";
 import hrRoutes from "./hr.routes.js";
 import adminRoutes from "./admin.routes.js";
+import reportRoutes from "./report.routes.js";
 
 const router = Router();
 
@@ -41,5 +42,6 @@ router.use("/notifications", notificationRoutes);
 router.use("/library", libraryRoutes);
 router.use("/hr", hrRoutes);
 router.use("/admin", adminRoutes);
+router.use("/reports", reportRoutes);
 
 export default router;
