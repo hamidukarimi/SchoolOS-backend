@@ -135,7 +135,7 @@ export const getAllTeachersService = async (
   const skip = (page - 1) * limit;
 
   const [teachers, total] = await Promise.all([
-    Teacher.find(query)
+    Teacher.find(query, scope.kind === "admin" ? undefined : { salary: 0 })
       .populate("userId", "email")
       .skip(skip)
       .limit(limit)
@@ -171,7 +171,10 @@ export const getTeacherByIdService = async (
     }
   }
 
-  const teacher = await Teacher.findById(id).populate("userId", "email");
+  const teacher = await Teacher.findById(
+    id,
+    scope.kind === "admin" ? undefined : { salary: 0 },
+  ).populate("userId", "email");
 
   if (!teacher) {
     throw new ApiError(404, "Teacher not found");
